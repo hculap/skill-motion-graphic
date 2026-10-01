@@ -1,0 +1,73 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>{{TITLE}}</title>
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  canvas { display: block; }
+  /* Local fonts only: put .woff2/.ttf files in assets/fonts and declare them here.
+     @font-face { font-family: "Display"; src: url(assets/fonts/Display.woff2); font-weight: 700; } */
+</style>
+<canvas id="c"></canvas>
+<script src="lib/motion.js"></script>
+<script>
+// ---- Render contract -------------------------------------------------------
+// window.seek(t) paints the exact frame for time t (seconds). Pure function of t:
+// no timers, no CSS transitions, no state carried between frames, no Math.random.
+// The renderer opens this page as index.html?w=W&h=H&render=1.
+
+const Q = new URLSearchParams(location.search);
+const W = +Q.get('w') || {{W}}, H = +Q.get('h') || {{H}};
+const DURATION = {{DUR}};                 // seconds; the renderer reads window.DURATION
+window.DURATION = DURATION;
+
+const canvas = document.getElementById('c');
+canvas.width = W; canvas.height = H;
+const g = canvas.getContext('2d');
+const L = layout(W, H);                    // margins, unit u, orientation flags
+
+// Fonts the film uses. Each one must be loaded before frame 0 or canvas text falls back.
+const FONTS = ['700 100px Inter', '400 100px Inter'];
+
+window.ready = Promise.all([
+  ...FONTS.map((f) => document.fonts.load(f)),
+  fetch('beats.json').then((r) => (r.ok ? r.json() : null)).then((b) => { BEATS = b; }).catch(() => {}),
+  // Preload images here: loadImage('assets/logo.png').then((img) => (IMG.logo = img)),
+]);
+const IMG = {};
+function loadImage(src) {
+  return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+}
+
+// ---- Palette ---------------------------------------------------------------
+const C = { bg: '#141413', ink: '#F0EEE6', accent: '#D97757', mute: '#8A877D' };
+
+// ---- Scenes ----------------------------------------------------------------
+// One object per shot. `from`/`to` in seconds (prefer beat(n) / bar(n) so cuts sit on
+// the grid). draw(t) receives local time t = global time - from.
+const SCENES = [
+  { from: 0, to: DURATION, draw(t) {
+      // Placeholder: replace with the shot list. Kept visibly unfinished on purpose.
+      const s = spring(t - 0.1, SPRING.heavy);
+      g.fillStyle = C.ink; g.textAlign = 'center'; g.textBaseline = 'middle';
+      fitText(g, 'REPLACE ME', L.safe.w * 0.8 * s + 1, '700 {px}px Inter');
+      g.fillText('REPLACE ME', L.cx, L.cy);
+  }},
+];
+
+function draw(t) {
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalAlpha = 1;
+  g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  for (const s of SCENES) if (t >= s.from && t < s.to) { g.save(); s.draw(t - s.from); g.restore(); }
+}
+
+window.seek = (t) => { draw(t); return true; };
+
+// Live preview when opened in a normal browser; off during headless render.
+if (!Q.has('render')) {
+  window.ready.then(() => {
+    const t0 = performance.now();
+    (function loop() { draw(((performance.now() - t0) / 1000) % DURATION); requestAnimationFrame(loop); })();
+  });
+}
+</script>
