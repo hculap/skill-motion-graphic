@@ -1,0 +1,14 @@
+{
+  "name": "motion-graphic",
+  "owner": { "name": "Szymon Paluch", "url": "https://github.com/hculap" },
+  "description": "Motion-graphics videos rendered from code: showreels, launch reels, UI-morph loops, kinetic type and animated explainers.",
+  "plugins": [
+    {
+      "name": "motion-graphic",
+      "source": "./",
+      "description": "Turns Claude Code into a motion-graphics studio: the film is written as code, rendered frame by frame in headless Chromium and encoded with ffmpeg, with a synthesized score (or optional ElevenLabs music) and a frame-critique loop.",
+      "category": "media",
+      "tags": ["video", "animation", "motion-graphics", "explainer", "elevenlabs"]
+    }
+  ]
+}

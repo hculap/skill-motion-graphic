@@ -11,6 +11,8 @@ This repository is an agent skill. The skill itself is `SKILL.md`, plus the `ref
 
 | Path | Read by | Rule |
 |---|---|---|
+| `.claude-plugin/plugin.json` | Claude Code's plugin loader | The plugin manifest. `name` stays `motion-graphic` forever. `version` must change with every release (see Releasing). |
+| `.claude-plugin/marketplace.json` | `claude plugin marketplace add` | The catalog: one entry, `source: "./"`, same `name` as the manifest. |
 | `SKILL.md` | the agent, on every trigger | Keep it short: the method, the hard rules, pointers. Details go into `references/`. |
 | `SKILL.md` frontmatter | the skill loader | `name: motion-graphic` must match the install directory name. `description` is the trigger: what it does plus "use when…" phrases, including the Polish *rolka* and *animacja*. |
 | `references/*.md` | the agent, on demand | One topic per file, linked from `SKILL.md`. Each file starts with what it covers. |
@@ -49,6 +51,28 @@ The smoke test never spends credits. If you changed `eleven.mjs`, also run the f
 Then open `out/stills/contact.png` and `out/contact.png` and look at them. If you changed anything visual (template, `motion.js`, contact sheets), a passing exit code doesn't mean it looks right.
 
 Pass `--format` (or `--w`/`--h`) to every `render.mjs` call, in tests and in docs.
+
+## Releasing
+
+The repository is both the plugin and its marketplace. Users install with
+`claude plugin marketplace add hculap/skill-motion-graphic` and
+`claude plugin install motion-graphic@motion-graphic`.
+
+1. **Bump `version`** in `.claude-plugin/plugin.json` for every change users should get: patch for fixes, minor for
+   features. Installed users receive a release only when this string changes. Don't set `version` in the marketplace entry.
+2. **Validate:** `claude plugin validate --strict .` must end with `✔ Validation passed`.
+3. **Install test in a throwaway config**, which leaves your own settings alone:
+   ```bash
+   T=$(mktemp -d)
+   CLAUDE_CONFIG_DIR=$T claude plugin marketplace add ./
+   CLAUDE_CONFIG_DIR=$T claude plugin install motion-graphic@motion-graphic
+   CLAUDE_CONFIG_DIR=$T claude plugin details motion-graphic     # expect "Skills (1)  motion-graphic"
+   ```
+4. Commit and push, then repeat step 3 with `hculap/skill-motion-graphic` in place of `./` to test what users download.
+
+Keep `SKILL.md` at the repository root, with `name: motion-graphic` in its frontmatter. That makes the plugin a
+single-skill plugin, and it keeps the plain `git clone` into a skills directory working. Never rename the plugin;
+change `displayName` instead, or follow the `renames` procedure in the Claude Code docs.
 
 ## Style
 

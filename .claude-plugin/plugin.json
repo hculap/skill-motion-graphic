@@ -1,0 +1,23 @@
+{
+  "name": "motion-graphic",
+  "displayName": "Motion Graphic",
+  "version": "1.0.0",
+  "description": "Make motion-graphics videos from code: a deterministic seek(t) canvas engine rendered frame by frame in headless Chromium, spring motion, a synthesized score (or optional ElevenLabs music) and a frame-critique loop.",
+  "author": {
+    "name": "Szymon Paluch",
+    "url": "https://github.com/hculap"
+  },
+  "homepage": "https://github.com/hculap/skill-motion-graphic",
+  "repository": "https://github.com/hculap/skill-motion-graphic",
+  "keywords": [
+    "motion-graphics",
+    "video",
+    "animation",
+    "explainer",
+    "reels",
+    "canvas",
+    "ffmpeg",
+    "playwright",
+    "elevenlabs"
+  ]
+}

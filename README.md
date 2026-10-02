@@ -16,16 +16,26 @@ Without a harness, a model gives you its default video: centered text on a gradi
 
 ## Install
 
-Claude Code (personal skill):
+**As a Claude Code plugin** (recommended). In your shell:
+
+```bash
+claude plugin marketplace add hculap/skill-motion-graphic
+claude plugin install motion-graphic@motion-graphic
+```
+
+Or both in one step inside a session: `/plugin install motion-graphic --marketplace hculap/skill-motion-graphic` (Claude Code v2.1.275 or later). The skill then appears as `motion-graphic:motion-graphic`. It adds about 110 tokens to every session (its name and description); the full skill, about 1.8k tokens, loads only when it runs.
+
+To update, run `claude plugin update motion-graphic@motion-graphic`, or turn on auto-update for the marketplace under **Marketplaces** in `/plugin`.
+
+**As a plain skill.** Clone it into a skills directory:
 
 ```bash
 git clone https://github.com/hculap/skill-motion-graphic ~/.claude/skills/motion-graphic
-bash ~/.claude/skills/motion-graphic/scripts/setup.sh
 ```
 
-To scope it to one repository, clone into `.claude/skills/motion-graphic` inside that repository instead. The directory name has to match the skill name, `motion-graphic`.
+Clone into `.claude/skills/motion-graphic` inside a repository instead to scope it to that repository. It loads as `motion-graphic`, without the plugin prefix, and `git pull` updates it.
 
-Then ask for a video: *"make a 15-second launch reel for https://example.com"*, *"animated explainer of this paper, 1:1 for X"*, *"rolka 9:16 o naszym nowym API"*. The skill triggers on requests for motion graphics, animated videos, promo or launch films, reels, *rolka* or *animacja*.
+Then ask for a video: *"make a 15-second launch reel for https://example.com"*, *"animated explainer of this paper, 1:1 for X"*, *"rolka 9:16 o naszym nowym API"*. The skill triggers on requests for motion graphics, animated videos, promo or launch films, reels, *rolka* or *animacja*. On first use, the agent installs the render runtime (`scripts/setup.sh`, once per machine).
 
 ### Requirements
 
@@ -51,7 +61,7 @@ The agent follows `SKILL.md`. In short:
 6. **Render, mix, deliver** every requested format, each reframed rather than cropped.
 
 ```bash
-SKILL=~/.claude/skills/motion-graphic
+SKILL=~/.claude/skills/motion-graphic   # the skill's folder; Claude Code shows it as "Base directory for this skill" when the skill loads
 python3 $SKILL/scripts/init_studio.py motion/launch --format 9:16 --dur 15 --title "Launch film"
 cd motion/launch
 # write audio/score.json first (format in references/sound.md), then:
@@ -68,6 +78,7 @@ Always pass `--format` (`9:16`, `1:1`, `16:9`, `4:5`) or `--w`/`--h` to `render.
 ## What's inside
 
 ```
+.claude-plugin/           plugin.json (the plugin) and marketplace.json (the catalog that lists it)
 SKILL.md                 entry point: when to use, the 6-step method, hard rules
 references/
   engine.md              render contract, routes A–D, springs, patterns, formats, performance
