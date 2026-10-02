@@ -14,7 +14,7 @@ This repository is an agent skill. The skill itself is `SKILL.md`, plus the `ref
 | `SKILL.md` | the agent, on every trigger | Keep it short: the method, the hard rules, pointers. Details go into `references/`. |
 | `SKILL.md` frontmatter | the skill loader | `name: motion-graphic` must match the install directory name. `description` is the trigger: what it does plus "use when…" phrases, including the Polish *rolka* and *animacja*. |
 | `references/*.md` | the agent, on demand | One topic per file, linked from `SKILL.md`. Each file starts with what it covers. |
-| `scripts/*` | the agent, as commands | Zero dependencies beyond the shared Playwright runtime (`setup.sh`), Node 18+, ffmpeg and the Python 3 standard library. `beats.py` is the exception: uv installs librosa. |
+| `scripts/*` | the agent, as commands | Zero dependencies beyond the shared Playwright runtime (`setup.sh`), Node 18+, ffmpeg and the Python 3 standard library. `beats.py` is the exception: uv installs librosa. `eleven.mjs` uses Node's built-in `fetch`. |
 | `assets/template/` | `init_studio.py` | Copied into each new film project. `{{W}}`, `{{H}}`, `{{DUR}}`, `{{TITLE}}` and `{{SKILL_DIR}}` are substituted in `.html/.js/.md/.json/.css` files. |
 
 ## Invariants: don't break these
@@ -24,7 +24,8 @@ This repository is an agent skill. The skill itself is `SKILL.md`, plus the `ref
 3. **Sandbox-safe.** Some agent sandboxes have no writable `/tmp`. Keep the existing fallbacks that move `TMPDIR` into the project or runtime folder.
 4. **Never destroy user work.** `init_studio.py` never overwrites an existing file, and `finalize.py` refuses to overwrite its input. Keep it that way.
 5. **Machine-readable output.** Scripts print a JSON result (or a short echo line) that an agent can parse. Progress goes to stderr.
-6. **Honest figures.** Numbers in `references/` that come from the trend article (views, prompt sizes, run times) stay attributed to `references/sources.md`. Numbers measured by the skill say where and how they were measured.
+6. **Paid calls are opt-in.** The skill must work fully without `ELEVENLABS_API_KEY`. `eleven.mjs` keeps an existing output unless `--force` is passed, offers `--dry-run` on every paid command, writes `<out>.request.json` next to each file, and never prints the key. Check request bodies against the official OpenAPI spec (`https://api.elevenlabs.io/openapi.json`), not memory.
+7. **Honest figures.** Numbers in `references/` that come from the trend article (views, prompt sizes, run times) stay attributed to `references/sources.md`. Numbers measured by the skill say where and how they were measured.
 
 ## Testing a change
 
@@ -42,6 +43,8 @@ node $SK/scripts/render.mjs . --format 1:1 --fps 30 --sub 1   # draft video → 
 python3 $SK/scripts/finalize.py out/silent-1080x1080.mp4 out/score.wav
 bash $SK/scripts/inspect.sh all out/final-1080x1080.mp4
 ```
+
+The smoke test never spends credits. If you changed `eleven.mjs`, also run the free calls: `node $SK/scripts/eleven.mjs check` and every subcommand with `--dry-run`. Run a paid generation only with the owner's OK.
 
 Then open `out/stills/contact.png` and `out/contact.png` and look at them. If you changed anything visual (template, `motion.js`, contact sheets), a passing exit code doesn't mean it looks right.
 

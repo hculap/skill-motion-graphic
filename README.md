@@ -11,6 +11,7 @@ Without a harness, a model gives you its default video: centered text on a gradi
 - **A deterministic engine.** `window.seek(t)` paints frame *t* as a pure function of time. Headless Chromium calls it for every subframe, and ffmpeg blends the subframes into motion blur. The same film always renders the same bytes, so a fix is a one-line edit plus a re-render.
 - **Motion with mass.** Closed-form springs (`spring`, `track`, `trackN`, `indicator`) replace easing curves. A value with several targets never restarts.
 - **Sound on the same timeline.** A dependency-free synthesizer writes the score and SFX to a beat grid. Cuts land on downbeats and UI sounds on the frame of the action. `finalize.py` masters to −14 LUFS.
+- **ElevenLabs, if you have it.** With an `ELEVENLABS_API_KEY`, the agent can generate music from a section plan that matches the shot list, score a finished cut with video-to-music, and generate sound effects. All of it is optional and paid: without a key the skill uses its own synthesizer and nothing changes.
 - **A critique loop.** The agent renders contact sheets, phone-width sheets and frame strips, then looks at them and scores the film on 7 axes. It fixes the 3 worst problems and repeats until every score is 8 or higher.
 
 ## Install
@@ -33,7 +34,8 @@ Then ask for a video: *"make a 15-second launch reel for https://example.com"*, 
 | Node.js 18+ with npm | renderer, synthesizer, site grabber |
 | ffmpeg + ffprobe | encoding, mixing, inspection |
 | Python 3 | `init_studio.py`, `finalize.py` (standard library only) |
-| [uv](https://docs.astral.sh/uv/) | only for `beats.py` (measuring a supplied music track) |
+| [uv](https://docs.astral.sh/uv/) | only for `beats.py` (measuring a supplied or generated music track) |
+| `ELEVENLABS_API_KEY` (optional) | generated music and SFX through `eleven.mjs`; paid, used only after the user approves the cost. Music needs the key's `music_generation` permission |
 
 `setup.sh` is idempotent. It installs Playwright and headless Chromium once into a shared cache at `~/.cache/motion-graphic`, which you can move with `MOTION_RUNTIME`. Film projects never get their own `node_modules`. On a bare Debian or Ubuntu box, Chromium may also need its system libraries: `sudo npx --prefix ~/.cache/motion-graphic playwright install-deps chromium`.
 
@@ -71,13 +73,14 @@ references/
   engine.md              render contract, routes A–D, springs, patterns, formats, performance
   prompting.md           brief ladder L1–L4, named looks, state specs, director briefs
   critique.md            the critique loop, scoring prompt, inspection commands
-  sound.md               score.json format, voices, cues, mixing to −14 LUFS
+  sound.md               score.json format, voices, cues, ElevenLabs path, mixing to −14 LUFS
   sources.md             where the method and the quoted figures come from
 scripts/
   setup.sh               shared Playwright + Chromium runtime (idempotent)
   init_studio.py         scaffold a film project from assets/template (never overwrites)
   render.mjs             deterministic renderer: video, stills, labelled contact sheets
   synth.mjs              score + SFX synthesizer, writes the beat grid
+  eleven.mjs             optional ElevenLabs music, video-to-music and SFX (paid; --dry-run, never overwrites without --force)
   beats.py               beat grid from a supplied track (librosa via uv)
   finalize.py            mux picture + sound, two-pass loudness normalization
   inspect.sh             contact sheet, frame strip, phone sheet, loop seam, poster, loudness

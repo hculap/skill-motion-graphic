@@ -36,11 +36,12 @@ Pick a route ([engine.md](references/engine.md) §2):
 Brief and spec templates live in [prompting.md](references/prompting.md).
 
 Ask only for things that change the film: product + URL, duration, formats, brand assets,
-a reference, music (a file or synthesized), and the language of on-screen text. Otherwise use
+a reference, music (a file, synthesized, or ElevenLabs), and the language of on-screen text. Otherwise use
 these defaults:
 
 - 15 s, 9:16 at 1080×1920, 60 fps
-- a synthesized 120 BPM score
+- a synthesized 120 BPM score. Generate it with ElevenLabs only when `ELEVENLABS_API_KEY` is set and
+  the user approved the cost ([sound.md](references/sound.md) Path 3). Without a key nothing changes.
 - a named look you choose and commit to
 - on-screen text in the user's language
 
@@ -73,6 +74,9 @@ follows (render contract, banned looks, the critique loop).
    Otherwise write `audio/score.json` and run
    `node SKILL/scripts/synth.mjs audio/score.json out/score.wav --beats beats.json` now, so the
    picture is cut to the grid from the start ([sound.md](references/sound.md)).
+   With ElevenLabs (key set and cost approved), sketch the section lengths first. Then generate
+   the track from a plan with those lengths (`node SKILL/scripts/eleven.mjs music …`), measure it
+   with `beats.py`, and finish the shot list on the measured grid.
 4. **`docs/shotlist.md` on the grid.**
    - A hook in the first 2 s.
    - Something new every 2–4 s.
@@ -145,6 +149,7 @@ copied into the gallery. Otherwise give the file paths.
   generic particle bursts, glow on UI chrome.
 - API keys come from the environment or `.env` and never go into prompts or committed files.
   Paid generation needs the user's OK on budget.
-- Licensed music and fonts only: the user's own, royalty-free, or synthesized.
+- Licensed music and fonts only: the user's own, royalty-free, synthesized, or generated under the
+  user's ElevenLabs plan (check that the plan covers commercial use before an ad runs).
 
 Attribution and repos: [sources.md](references/sources.md).
