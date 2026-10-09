@@ -1,0 +1,17 @@
+skill-motion-graphic
+Copyright (c) 2026 Szymon Paluch
+
+Third-party origin of some code
+
+Parts of this skill extend code snippets published in "How to build motion design
+studio with Opus 5.5 (Full-course)" by Movez (@0xMovez), an X article dated
+2026-09-27: https://x.com/0xMovez/status/2104216919033192746
+
+- assets/template/lib/motion.js keeps the article's spring, track, indicator,
+  swapAlpha and loopT functions.
+- scripts/render.mjs (workers and canvas capture), scripts/synth.mjs (voices and
+  sends), scripts/inspect.sh and scripts/finalize.py extend the article's snippets.
+
+The article states no licence for its snippets. The licence in LICENSE covers the
+author's own work in this repository; it does not grant rights the snippet author
+has not granted. See references/sources.md for the full list of sources.

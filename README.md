@@ -114,3 +114,7 @@ A 64-second 1080×1080 explainer at 60 fps with 4 blended subframes, about 15,00
 ## Credits
 
 The method comes from Movez's (@0xMovez) synthesis of the code-rendered motion trend that followed Claude Opus 5.5, and from the creators and repositories it collects. See [`references/sources.md`](references/sources.md). Figures quoted in the references (views, prompt lengths, run times) are as reported there, not measured by this skill.
+
+## License
+
+[MIT](LICENSE)
