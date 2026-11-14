@@ -125,6 +125,7 @@ commands and the stop rules are in [critique.md](references/critique.md).
 
 ```
 node SKILL/scripts/render.mjs PROJECT --format 9:16                      # 60 fps, 4 blended subframes
+#   opt-in for a canvas-2D film at --sub 3+: add --accum (same pixels; faster on detailed frames, engine.md §8)
 python3 SKILL/scripts/finalize.py PROJECT/out/silent-1080x1920.mp4 PROJECT/out/score.wav   # −14 LUFS
 bash SKILL/scripts/inspect.sh all PROJECT/out/final-1080x1920.mp4         # sheet, phone, seam, loop, poster, loudness
 ```

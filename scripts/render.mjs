@@ -3,12 +3,17 @@
 //
 // Video:   node render.mjs <project> [--format 9:16|1:1|16:9 | --w W --h H]
 //                          [--fps 60] [--sub 4] [--dur S] [--from S] [--to S] [--crf 16] [--out FILE]
+//                          [--workers 4] [--accum]
 // Stills:  node render.mjs <project> --stills 0,1.5,3 | --every 0.5 | --beats [beats.json]
 //                          [--format ...] [--outdir DIR]       (also writes a labelled contact sheet)
 //
 // The project folder is served over a local HTTP server (fetch, fonts and images work),
 // opened as index.html?w=W&h=H&render=1, and window.seek(t) is called for every
 // frame. With --sub N each output frame averages N subframes (motion blur).
+// By default ffmpeg averages them (tmix), so every subframe travels as a PNG. --accum
+// averages them inside the page instead and ships one PNG per output frame: same pixels,
+// up to 3x faster on detailed frames at --sub 8, no gain on flat frames or at low --sub.
+// Needs canvas capture of an opaque 2D canvas.
 import { createRequire } from 'node:module';
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
@@ -97,8 +102,40 @@ async function openPage(w, h) {
 async function frame(p, t) {
   if (CAPTURE === 'canvas') {
     const b64 = await p.evaluate(async (tt) => {
-      await window.seek(tt);                          // seek may return a promise (video/image layers)
-      const c = document.querySelector('canvas');
+      let c;
+      if (Array.isArray(tt)) {                        // --accum: average the subframes here, ship one PNG
+        c = document.querySelector('canvas');
+        const g = c.getContext('2d');
+        if (!g) throw new Error('--accum needs a 2D canvas');
+        const w = c.width, h = c.height, n = tt.length, len = w * h * 4;
+        let A = window.__mgAcc;                       // per-channel sums; Uint16 holds 257 x 255
+        if (!A || A.length !== len || (n > 257 && A.BYTES_PER_ELEMENT < 4)) A = window.__mgAcc = n > 257 ? new Uint32Array(len) : new Uint16Array(len);
+        else A.fill(0);
+        for (const t of tt) {
+          await window.seek(t);                       // seek may return a promise (video/image layers)
+          const d = g.getImageData(0, 0, w, h).data;
+          for (let k = 0; k < len; k++) A[k] += d[k];
+        }
+        // Sum -> 8-bit through a table built with tmix's rounding, so the output stays bit-identical.
+        // A float divide in the per-pixel loop ran 28 ms or 200 ms per frame depending on how V8 compiled it.
+        let L = window.__mgLut;
+        if (!L || L.n !== n) {
+          const half = n >> 1;
+          L = window.__mgLut = new Uint8Array(255 * n + 1); L.n = n;
+          for (let s = 0; s < L.length; s++) L[s] = ((s + half) / n) | 0;
+        }
+        let img = window.__mgImg;
+        if (!img || img.width !== w || img.height !== h) img = window.__mgImg = new ImageData(w, h);
+        const D = img.data;
+        for (let k = 0; k < len; k++) D[k] = L[A[k]];
+        const o = window.__mgOut ||= document.createElement('canvas');
+        if (o.width !== w || o.height !== h) { o.width = w; o.height = h; }
+        o.getContext('2d').putImageData(img, 0, 0);
+        c = o;
+      } else {
+        await window.seek(tt);                        // seek may return a promise (video/image layers)
+        c = document.querySelector('canvas');
+      }
       const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
       const bytes = new Uint8Array(await blob.arrayBuffer());
       let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
@@ -122,21 +159,27 @@ async function renderVideo() {
   const from = num('from', 0), to = Math.min(num('to', DUR), DUR);
   const out = resolve(project, opt('out', `out/silent-${W}x${H}${has('from') || has('to') ? `-${from}-${to}` : ''}.mp4`));
   mkdirSync(dirname(out), { recursive: true });
-  const rate = FPS * SUB;
-  const vf = SUB > 1 ? ['-vf', `tmix=frames=${SUB},select='eq(mod(n\\,${SUB})\\,${SUB - 1})',setpts=N/${FPS}/TB`] : [];
-  const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(rate), '-i', '-',
+  const rate = FPS * SUB;                            // subframes per second
+  const ACCUM = has('accum') && SUB > 1 && CAPTURE === 'canvas';
+  if (has('accum') && !ACCUM) console.error(`render.mjs: --accum ignored (${SUB > 1 ? `capture is ${CAPTURE}, ffmpeg averages instead` : 'sub 1, nothing to average'})`);
+  const vf = SUB > 1 && !ACCUM ? ['-vf', `tmix=frames=${SUB},select='eq(mod(n\\,${SUB})\\,${SUB - 1})',setpts=N/${FPS}/TB`] : [];
+  const perSec = ACCUM ? FPS : rate;                 // PNGs piped to ffmpeg per second of film
+  const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(perSec), '-i', '-',
     ...vf, '-r', String(FPS), '-c:v', 'libx264', '-preset', 'medium', '-crf', String(CRF), '-pix_fmt', 'yuv420p',
     '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
   const total = Math.round((to - from) * rate);
-  const times = Array.from({ length: total }, (_, i) => from + i / rate);
+  // --accum: one job per output frame holding its SUB subframe times; same groups and frame count as tmix+select.
+  const times = ACCUM
+    ? Array.from({ length: Math.floor(total / SUB) }, (_, i) => Array.from({ length: SUB }, (_, j) => from + (i * SUB + j) / rate))
+    : Array.from({ length: total }, (_, i) => from + i / rate);
   await renderAll(times, async (i, png) => {
     if (!ff.stdin.write(png)) await new Promise((r) => ff.stdin.once('drain', r));
-    if (i % rate === 0) console.error(`rendered ${(i / rate).toFixed(0)}s / ${(to - from).toFixed(1)}s`);
+    if (i % perSec === 0) console.error(`rendered ${(i / perSec).toFixed(0)}s / ${(to - from).toFixed(1)}s`);
   });
   ff.stdin.end();
   const code = await new Promise((r) => ff.on('close', r));
   if (code !== 0) die('ffmpeg failed');
-  console.log(JSON.stringify({ mode: 'video', out, w: W, h: H, fps: FPS, sub: SUB, from, to, seconds: ((Date.now() - started) / 1000).toFixed(1) }));
+  console.log(JSON.stringify({ mode: 'video', out, w: W, h: H, fps: FPS, sub: SUB, accum: ACCUM, from, to, seconds: ((Date.now() - started) / 1000).toFixed(1) }));
 }
 
 async function renderStills() {

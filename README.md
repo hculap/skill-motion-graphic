@@ -111,6 +111,8 @@ assets/template/         the studio skeleton init_studio.py copies
 
 A 64-second 1080×1080 explainer at 60 fps with 4 blended subframes, about 15,000 browser frames, rendered in about 4 minutes on an 8-vCPU ARM64 cloud server (Ubuntu 24.04, 4 workers). Draft video at 30 fps without subframes and still contact sheets take seconds.
 
+For finals with many subframes, `--accum` averages them inside the page instead of in ffmpeg. The pixels are the same, and detailed 1080p frames at 8 subframes render about 3× faster. Flat frames gain little, so time a short slice both ways first ([`references/engine.md`](references/engine.md) §8).
+
 ## Credits
 
 The method comes from Movez's (@0xMovez) synthesis of the code-rendered motion trend that followed Claude Opus 5.5, and from the creators and repositories it collects. See [`references/sources.md`](references/sources.md). Figures quoted in the references (views, prompt lengths, run times) are as reported there, not measured by this skill.

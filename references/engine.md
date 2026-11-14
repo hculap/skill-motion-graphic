@@ -147,6 +147,15 @@ Check each format's contact sheet; vertical usually needs stacked layouts and bi
 - Render speed on an 8-core ARM server (canvas capture, 4 workers): ~17 ms per subframe, so
   a 15 s film at 60 fps × 4 subframes ≈ 1 min plus encode; heavy scenes are slower.
   Drafts: `--fps 30 --sub 1`. Stills: `--every 0.5` takes seconds.
+- `--accum` for finals with `--sub 3` or more on a canvas-capture film: the page averages the
+  subframes and ships one PNG per frame, instead of every subframe going as a PNG to ffmpeg's
+  `tmix`. Output is bit-identical (same frame hashes at sub 2–8, with 2, 4 or 6 workers).
+  The gain grows with frame detail and `--sub`, because it saves PNG encoding and transfer.
+  Measured 2026-11-14 on the 8-core ARM server, 4 s slices: a detailed 1920×1080 film at sub 8,
+  6 workers, 37.7 s → 11.9 s; the template's flat 1080×1080 frames, 4 workers, no gain up to
+  sub 5 (±15 %) and about 25 % faster at sub 6–8. Time a 4 s slice (`--from`/`--to`) both
+  ways before a long final. Ignored with a warning in screen capture or at sub 1; assumes an
+  opaque 2D canvas.
 - Capture mode is auto: `canvas` (in-page encode, parallel) when the page is one full-frame
   canvas, `screen` (viewport screenshot) when DOM/SVG layers exist. Force with `--capture`
   or `window.CAPTURE = 'screen'`.
